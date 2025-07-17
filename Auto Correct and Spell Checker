@@ -1,0 +1,201 @@
+#include<bits/stdc++.h>
+using namespace std;
+
+struct Node
+{
+    bool isLast = false;
+    Node* child[52] = {NULL};
+};
+
+Node* root = new Node();
+
+int getId(char ch)
+{
+    int id = ch - 'A';//B - 'A' = 1
+    if(ch >= 'a')
+    {
+        id = id - 6;
+    }
+    return id;
+}
+
+void insert(string str,vector<string>&words)
+{
+    Node* current = root;
+    for(int i = 0 ; i < str.size() ; i++)
+    {
+        int id = getId(str[i]);
+        if(current -> child[id] == NULL)
+        {
+            current -> child[id] = new Node();
+        }
+        current = current -> child[id];
+    }
+    if(current -> isLast == false)
+    {
+        current -> isLast = true;
+        words.push_back(str);
+    }
+}
+
+bool search(string str)
+{
+    Node* current = root;
+    for(int i = 0 ; i < str.size() ; i++)
+    {
+        int id = getId(str[i]);
+        if(current -> child[id] == NULL)
+        {
+            return false;
+        }
+        current = current -> child[id];
+    }
+    return current -> isLast;
+}
+
+Node* getPrefixNode(string prefix)
+{
+    Node* current = root;
+    for(int i = 0 ; i < prefix.size() ; i++)
+    {
+        int id = getId(prefix[i]);
+        if(current -> child[id] == NULL)
+        {
+            cout<<"No word\n";
+            return NULL;
+        }
+        current = current -> child[id];
+    }
+    return current;
+}
+
+void dfs(Node* current,string prefix)
+{
+    if(current == NULL)
+    {
+        return;
+    }
+    if(current -> isLast == true)
+    {
+        cout<<prefix<<"\n";
+    }
+
+    for(int i = 0 ; i < 52 ; i++)
+    {
+        if(current -> child[i] != NULL)
+        {
+            char ch = (i < 26) ? ('A' + i) : ('a' + i - 26);
+            dfs(current -> child[i], prefix + ch);
+        }
+    }
+}
+
+int editDistance(string str1,string str2)
+{
+    int n = str1.size();
+    int m = str2.size();
+
+    if(n == 0)
+    {
+        return m;
+    }
+    if(m == 0)
+    {
+        return n;
+    }
+
+    vector<vector<int>>dp(n+1,vector<int>(m+1,0));
+
+    for(int i = 0 ; i <= n ; i++)
+    {
+        dp[i][0] = i;
+    }
+    for(int j = 0 ; j <= m ; j++)
+    {
+        dp[0][j] = j;
+    }
+
+    for(int i = 1 ; i <= n ; i++)
+    {
+        for(int j = 1 ; j <= m ; j++)
+        {
+            if(str1[i-1] == str2[j-1])
+            {
+                dp[i][j] = dp[i-1][j-1];
+            }
+            else
+            {
+                int res = min(dp[i-1][j] + 1,dp[i][j-1] + 1);
+                dp[i][j] = min(res,dp[i-1][j-1] + 1);
+            }
+        }
+    }
+    return dp[n][m];
+}
+
+string suggestNearestWord(string& input,vector<string>&words)
+{
+    int minDist = INT_MAX;
+    string bestMatch = "";
+
+    for (const string& word : words)
+    {
+        int dist = editDistance(input, word);
+        if(dist < minDist)
+        {
+            minDist = dist;
+            bestMatch = word;
+        }
+    }
+    return bestMatch;
+}
+
+
+void autocomplete(string str,vector<string>&words)
+{
+    Node* prefixNode = getPrefixNode(str);//Dop
+    if(prefixNode == NULL)
+    {
+        string suggestion = suggestNearestWord(str, words);
+        if(suggestion.empty())
+        {
+            cout<<"NO suggestion found\n";
+        }
+        else
+        {
+            cout<<"Did you mean: "<< suggestion<< "?\n";
+        }
+
+        return;
+    }
+    string prefix = str;//app
+
+    dfs(prefixNode,prefix);
+}
+
+
+int main()
+{
+    vector<string>words;
+    int n;
+    cin>>n;
+    for(int i = 0 ; i < n ; i++)
+    {
+        string str;
+        cin>>str;
+        insert(str,words);
+    }
+    string s;
+    cin>>s;
+    if(search(s))
+    {
+        cout<<"Correct\n";
+    }
+    else
+    {
+        cout<<"Auto complete word : ";
+        autocomplete(s,words);
+    }
+
+    return 0;
+}
